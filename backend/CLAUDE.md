@@ -49,7 +49,7 @@ backend/
 │   ├── utils/          # jwt.js, password.js
 │   ├── app.js          # crea y configura la app (no escucha)
 │   └── server.js       # levanta la app
-├── openapi.yaml
+├── openapi.json
 └── package.json
 ```
 
@@ -196,6 +196,8 @@ Todas las rutas de la API llevan el prefijo `/api/v1`. El health check y la docu
 - `openingHours` y `schedule` ordenados por `weekday` (lunes a domingo).
 - Las sesiones de cada día, ordenadas por `startTime`.
 - Los días sin sesiones no aparecen en `schedule`.
+- Una actividad sin sesiones aparece en `activities` con `schedule: []`.
+- Las sedes del listado y las actividades de cada sede se ordenan por `id` (orden del catálogo, determinista).
 
 ### Errores
 
@@ -207,7 +209,7 @@ Todas las rutas de la API llevan el prefijo `/api/v1`. El health check y la docu
 | 401 | `TOKEN_MISSING` | Sin header `Authorization` o sin el formato `Bearer <token>` |
 | 401 | `TOKEN_INVALID` | Firma inválida, token malformado o algoritmo incorrecto; también un token válido cuyo usuario ya no existe (lo detecta el servicio, no `authenticate`) |
 | 401 | `TOKEN_EXPIRED` | Token vencido |
-| 404 | `VENUE_NOT_FOUND` | Sede inexistente, incluido un id no numérico |
+| 404 | `VENUE_NOT_FOUND` | Sede inexistente, incluido un id que no sea un entero positivo en forma canónica (`abc`, `0`, `01`, `1.0`, `+1`) |
 | 404 | `ROUTE_NOT_FOUND` | Ruta inexistente |
 | 409 | `EMAIL_ALREADY_IN_USE` | `PUT /users/me` con un email que usa otro usuario |
 | 413 | `PAYLOAD_TOO_LARGE` | Body que supera el límite de `express.json()` |
@@ -220,6 +222,7 @@ Todas las rutas de la API llevan el prefijo `/api/v1`. El health check y la docu
 - Manejador central en `src/middlewares/error-handler.js`, registrado al final de `app.js`.
 - Express 5 propaga solo los errores de los handlers async: no hace falta `try/catch` ni wrappers.
 - Las respuestas 401 incluyen el header `WWW-Authenticate` (RFC 6750).
+- Orden de los errores: `express.json()` es global, así que sus errores (400 `MALFORMED_JSON`, 413 `PAYLOAD_TOO_LARGE`, 415 `UNSUPPORTED_MEDIA_TYPE`) ocurren antes de la autenticación, incluso en rutas protegidas. El orden "401 antes que 400" aplica solo a `INVALID_INPUT`, porque `authenticate` corre antes que `validate`.
 
 ## Autenticación
 
@@ -247,9 +250,10 @@ Todas las rutas de la API llevan el prefijo `/api/v1`. El health check y la docu
 
 ## Documentación de la API
 
-- Especificación OpenAPI escrita a mano en `openapi.yaml`, servida con `swagger-ui-express` en `/docs`.
-- Al modificar un endpoint, actualizar `openapi.yaml` en la misma tarea.
-- El YAML va indentado con espacios (excepción del `.editorconfig`).
+- Especificación OpenAPI 3.1 escrita a mano en `openapi.json` (JSON, para no sumar una dependencia que lea YAML), indentada con tabs y servida con `swagger-ui-express` en `/docs`.
+- `app.js` la carga con import attributes: `import openapi from '../openapi.json' with { type: 'json' }`.
+- Documenta solo la API (`servers: /api/v1`). `/health` y `/docs` quedan fuera de la especificación; `/health` se menciona en la descripción general.
+- Al modificar un endpoint, actualizar `openapi.json` en la misma tarea.
 
 ## Fuera del alcance (documentado)
 

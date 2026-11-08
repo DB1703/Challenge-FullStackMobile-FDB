@@ -1,0 +1,923 @@
+{
+	"openapi": "3.1.0",
+	"info": {
+		"title": "Sports Activities API",
+		"version": "1.0.0",
+		"description": "REST API to browse sports venues and their activities, and to manage the authenticated user's profile.\n\n**Response format**\n- Success: `{ \"data\": ... }`.\n- Error: `{ \"error\": { \"code\", \"message\", \"details\"? } }`. `details` is only present on validation errors.\n\n**Authentication**\n1. Call `POST /auth/login` with the test user (`usuario.prueba@example.com` / `Prueba123!`).\n2. Click **Authorize** and paste the returned `token` (without the `Bearer` prefix).\n\nProtected endpoints expect `Authorization: Bearer <token>`. Every 401 response includes a `WWW-Authenticate` header (RFC 6750). Logout is handled by the client by discarding the token.\n\n**Request body parsing**\nJSON bodies are parsed globally before authentication and validation. Parser errors (400 `MALFORMED_JSON`, 413 `PAYLOAD_TOO_LARGE`, 415 `UNSUPPORTED_MEDIA_TYPE`) are therefore returned even when the request has no valid token. Validation errors (400 `INVALID_INPUT`) are only reported after authentication succeeds.\n\n**Outside this specification**\n- `GET /health` (at the server root, not under `/api/v1`) returns `200 { \"status\": \"ok\" }` without the `data` envelope.\n- Any unknown route returns 404 `ROUTE_NOT_FOUND`."
+	},
+	"servers": [
+		{
+			"url": "/api/v1"
+		}
+	],
+	"tags": [
+		{
+			"name": "Auth",
+			"description": "Login with email and password."
+		},
+		{
+			"name": "Users",
+			"description": "Profile of the authenticated user."
+		},
+		{
+			"name": "Venues",
+			"description": "Public catalog of venues, activities and sessions."
+		}
+	],
+	"paths": {
+		"/auth/login": {
+			"post": {
+				"tags": ["Auth"],
+				"operationId": "login",
+				"summary": "Log in",
+				"description": "Validates the credentials and returns a JWT (HS256). The token payload contains only `sub` (user id as a string) and `exp`. An unknown email and a wrong password return the same 401 `INVALID_CREDENTIALS` error.",
+				"security": [],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/LoginRequest"
+							},
+							"examples": {
+								"testUser": {
+									"summary": "Test user from the seed",
+									"value": {
+										"email": "usuario.prueba@example.com",
+										"password": "Prueba123!"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Valid credentials.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/TokenResponse"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "`INVALID_INPUT`: invalid fields or fields not allowed. `MALFORMED_JSON`: the body is not valid JSON.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								},
+								"examples": {
+									"INVALID_INPUT": {
+										"summary": "Invalid email, empty password and a field that is not allowed",
+										"value": {
+											"error": {
+												"code": "INVALID_INPUT",
+												"message": "Invalid request body",
+												"details": [
+													{ "field": "email", "message": "Invalid email address" },
+													{ "field": "password", "message": "Password is required" },
+													{ "field": "extra", "message": "Field is not allowed" }
+												]
+											}
+										}
+									},
+									"MALFORMED_JSON": {
+										"$ref": "#/components/examples/MalformedJson"
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "`INVALID_CREDENTIALS`: unknown email or wrong password (same response for both).",
+						"headers": {
+							"WWW-Authenticate": {
+								"$ref": "#/components/headers/WWW-Authenticate"
+							}
+						},
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								},
+								"examples": {
+									"INVALID_CREDENTIALS": {
+										"summary": "Unknown email or wrong password",
+										"value": {
+											"error": {
+												"code": "INVALID_CREDENTIALS",
+												"message": "Invalid email or password"
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					"413": {
+						"$ref": "#/components/responses/PayloadTooLarge"
+					},
+					"415": {
+						"$ref": "#/components/responses/UnsupportedMediaType"
+					},
+					"500": {
+						"$ref": "#/components/responses/InternalError"
+					}
+				}
+			}
+		},
+		"/users/me": {
+			"get": {
+				"tags": ["Users"],
+				"operationId": "getProfile",
+				"summary": "Get the authenticated user's profile",
+				"description": "Returns the profile of the user identified by the token. A validly signed token whose user no longer exists returns 401 `TOKEN_INVALID`.",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Profile of the authenticated user.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserResponse"
+								}
+							}
+						}
+					},
+					"401": {
+						"$ref": "#/components/responses/TokenError"
+					},
+					"500": {
+						"$ref": "#/components/responses/InternalError"
+					}
+				}
+			},
+			"put": {
+				"tags": ["Users"],
+				"operationId": "updateProfile",
+				"summary": "Replace the authenticated user's profile",
+				"description": "Full replacement: the body must always include `firstName`, `lastName`, `email` and `address` (send `null` to clear the address). `birthDate` and the password are not editable, and sending them returns 400 `INVALID_INPUT`.\n\nOrder of checks: JSON parser errors (400 `MALFORMED_JSON`, 413, 415) happen before authentication; then the token is checked (401), then the body is validated (400 `INVALID_INPUT`), and finally the email is checked against other users (409). Keeping your own email never returns 409.",
+				"security": [
+					{
+						"bearerAuth": []
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/UpdateProfileRequest"
+							},
+							"examples": {
+								"fullProfile": {
+									"summary": "Seed data of the test user",
+									"value": {
+										"firstName": "Lucía",
+										"lastName": "Fernández",
+										"email": "usuario.prueba@example.com",
+										"address": "Av. Corrientes 1234, CABA"
+									}
+								},
+								"withoutAddress": {
+									"summary": "Clearing the address",
+									"value": {
+										"firstName": "Lucía",
+										"lastName": "Fernández",
+										"email": "usuario.prueba@example.com",
+										"address": null
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Updated profile.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserResponse"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "`INVALID_INPUT`: invalid fields, missing fields or fields not allowed. `MALFORMED_JSON`: the body is not valid JSON (returned even without a valid token).",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								},
+								"examples": {
+									"INVALID_INPUT": {
+										"summary": "Empty first name, invalid email, missing address and a field that is not editable",
+										"value": {
+											"error": {
+												"code": "INVALID_INPUT",
+												"message": "Invalid request body",
+												"details": [
+													{ "field": "firstName", "message": "Must not be empty" },
+													{ "field": "email", "message": "Invalid email address" },
+													{ "field": "address", "message": "Invalid input: expected string, received undefined" },
+													{ "field": "birthDate", "message": "Field is not allowed" }
+												]
+											}
+										}
+									},
+									"MALFORMED_JSON": {
+										"$ref": "#/components/examples/MalformedJson"
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"$ref": "#/components/responses/TokenError"
+					},
+					"409": {
+						"description": "`EMAIL_ALREADY_IN_USE`: another user already uses that email.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								},
+								"examples": {
+									"EMAIL_ALREADY_IN_USE": {
+										"summary": "Email used by another user",
+										"value": {
+											"error": {
+												"code": "EMAIL_ALREADY_IN_USE",
+												"message": "Email is already in use"
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					"413": {
+						"$ref": "#/components/responses/PayloadTooLarge"
+					},
+					"415": {
+						"$ref": "#/components/responses/UnsupportedMediaType"
+					},
+					"500": {
+						"$ref": "#/components/responses/InternalError"
+					}
+				}
+			}
+		},
+		"/venues": {
+			"get": {
+				"tags": ["Venues"],
+				"operationId": "listVenues",
+				"summary": "List venues",
+				"description": "Summary of every venue, ordered by `id`. Public endpoint.",
+				"security": [],
+				"responses": {
+					"200": {
+						"description": "List of venue summaries.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/VenueListResponse"
+								}
+							}
+						}
+					},
+					"500": {
+						"$ref": "#/components/responses/InternalError"
+					}
+				}
+			}
+		},
+		"/venues/{id}": {
+			"get": {
+				"tags": ["Venues"],
+				"operationId": "getVenue",
+				"summary": "Get a venue",
+				"description": "Full venue with its opening hours and its activities, each with its weekly schedule. Public endpoint.",
+				"security": [],
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"description": "Venue id. It must be a positive integer in canonical form: any other value (`abc`, `0`, `01`, `1.0`, `+1`) returns 404 `VENUE_NOT_FOUND`. Declared as a string so that invalid values can be tried from Swagger UI.",
+						"schema": {
+							"type": "string",
+							"pattern": "^[1-9]\\d*$"
+						},
+						"example": "1"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Full venue.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/VenueResponse"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "`VENUE_NOT_FOUND`: the venue does not exist or the id is not a canonical positive integer.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								},
+								"examples": {
+									"VENUE_NOT_FOUND": {
+										"summary": "Unknown or invalid id",
+										"value": {
+											"error": {
+												"code": "VENUE_NOT_FOUND",
+												"message": "Venue not found"
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					"500": {
+						"$ref": "#/components/responses/InternalError"
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"securitySchemes": {
+			"bearerAuth": {
+				"type": "http",
+				"scheme": "bearer",
+				"bearerFormat": "JWT",
+				"description": "JWT returned by `POST /auth/login`."
+			}
+		},
+		"headers": {
+			"WWW-Authenticate": {
+				"description": "Bearer challenge (RFC 6750). `TOKEN_INVALID` and `TOKEN_EXPIRED` add `error=\"invalid_token\"`.",
+				"schema": {
+					"type": "string"
+				},
+				"examples": {
+					"default": {
+						"value": "Bearer realm=\"api\""
+					},
+					"invalidToken": {
+						"value": "Bearer realm=\"api\", error=\"invalid_token\""
+					}
+				}
+			}
+		},
+		"schemas": {
+			"Time": {
+				"type": "string",
+				"pattern": "^\\d{2}:\\d{2}$",
+				"description": "Time of day in 24-hour `HH:MM` format.",
+				"examples": ["18:00"]
+			},
+			"Weekday": {
+				"type": "integer",
+				"minimum": 1,
+				"maximum": 7,
+				"description": "ISO 8601 weekday: 1 = Monday, 7 = Sunday.",
+				"examples": [1]
+			},
+			"LoginRequest": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["email", "password"],
+				"properties": {
+					"email": {
+						"type": "string",
+						"format": "email",
+						"description": "Trimmed and lowercased before validation."
+					},
+					"password": {
+						"type": "string",
+						"minLength": 1
+					}
+				}
+			},
+			"UpdateProfileRequest": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": ["firstName", "lastName", "email", "address"],
+				"properties": {
+					"firstName": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 50,
+						"description": "Trimmed; between 1 and 50 characters after trimming."
+					},
+					"lastName": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 50,
+						"description": "Trimmed; between 1 and 50 characters after trimming."
+					},
+					"email": {
+						"type": "string",
+						"format": "email",
+						"description": "Trimmed and lowercased before validation. Must not be used by another user."
+					},
+					"address": {
+						"type": ["string", "null"],
+						"maxLength": 200,
+						"description": "Trimmed; up to 200 characters after trimming. An empty or whitespace-only string is stored as `null`."
+					}
+				}
+			},
+			"User": {
+				"type": "object",
+				"required": ["id", "email", "firstName", "lastName", "birthDate", "address"],
+				"properties": {
+					"id": {
+						"type": "integer"
+					},
+					"email": {
+						"type": "string",
+						"format": "email"
+					},
+					"firstName": {
+						"type": "string"
+					},
+					"lastName": {
+						"type": "string"
+					},
+					"birthDate": {
+						"type": "string",
+						"format": "date",
+						"description": "ISO 8601 date (`YYYY-MM-DD`). Not editable."
+					},
+					"address": {
+						"type": ["string", "null"]
+					}
+				},
+				"examples": [
+					{
+						"id": 1,
+						"email": "usuario.prueba@example.com",
+						"firstName": "Lucía",
+						"lastName": "Fernández",
+						"birthDate": "1995-04-12",
+						"address": "Av. Corrientes 1234, CABA"
+					}
+				]
+			},
+			"VenueSummary": {
+				"type": "object",
+				"required": ["id", "name", "address", "location"],
+				"properties": {
+					"id": {
+						"type": "integer"
+					},
+					"name": {
+						"type": "string"
+					},
+					"address": {
+						"type": "string"
+					},
+					"location": {
+						"type": "string",
+						"description": "Free-text location reference."
+					}
+				}
+			},
+			"Venue": {
+				"allOf": [
+					{
+						"$ref": "#/components/schemas/VenueSummary"
+					},
+					{
+						"type": "object",
+						"required": ["description", "openingHours", "activities"],
+						"properties": {
+							"description": {
+								"type": "string"
+							},
+							"openingHours": {
+								"type": "array",
+								"description": "Ordered by `weekday` (Monday to Sunday). Days when the venue is closed are not included.",
+								"items": {
+									"$ref": "#/components/schemas/OpeningHours"
+								}
+							},
+							"activities": {
+								"type": "array",
+								"description": "Ordered by `id`.",
+								"items": {
+									"$ref": "#/components/schemas/Activity"
+								}
+							}
+						}
+					}
+				]
+			},
+			"OpeningHours": {
+				"type": "object",
+				"required": ["weekday", "opensAt", "closesAt"],
+				"properties": {
+					"weekday": {
+						"$ref": "#/components/schemas/Weekday"
+					},
+					"opensAt": {
+						"$ref": "#/components/schemas/Time"
+					},
+					"closesAt": {
+						"$ref": "#/components/schemas/Time"
+					}
+				}
+			},
+			"Activity": {
+				"type": "object",
+				"required": ["id", "name", "description", "schedule"],
+				"properties": {
+					"id": {
+						"type": "integer"
+					},
+					"name": {
+						"type": "string"
+					},
+					"description": {
+						"type": "string"
+					},
+					"schedule": {
+						"type": "array",
+						"description": "Ordered by `weekday` (Monday to Sunday). Days without sessions are not included; an activity without sessions has an empty array.",
+						"items": {
+							"$ref": "#/components/schemas/ScheduleDay"
+						}
+					}
+				}
+			},
+			"ScheduleDay": {
+				"type": "object",
+				"required": ["weekday", "sessions"],
+				"properties": {
+					"weekday": {
+						"$ref": "#/components/schemas/Weekday"
+					},
+					"sessions": {
+						"type": "array",
+						"description": "Ordered by `startTime`.",
+						"items": {
+							"$ref": "#/components/schemas/Session"
+						}
+					}
+				}
+			},
+			"Session": {
+				"type": "object",
+				"description": "Bookable instance of an activity on a given weekday and time.",
+				"required": ["id", "startTime", "endTime"],
+				"properties": {
+					"id": {
+						"type": "integer"
+					},
+					"startTime": {
+						"$ref": "#/components/schemas/Time"
+					},
+					"endTime": {
+						"$ref": "#/components/schemas/Time"
+					}
+				}
+			},
+			"TokenResponse": {
+				"type": "object",
+				"required": ["data"],
+				"properties": {
+					"data": {
+						"type": "object",
+						"required": ["token"],
+						"properties": {
+							"token": {
+								"type": "string",
+								"description": "JWT (HS256) with `sub` and `exp`."
+							}
+						}
+					}
+				},
+				"examples": [
+					{
+						"data": {
+							"token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIiwiZXhwIjoxNzk0MTM2MDQwfQ.<signature>"
+						}
+					}
+				]
+			},
+			"UserResponse": {
+				"type": "object",
+				"required": ["data"],
+				"properties": {
+					"data": {
+						"$ref": "#/components/schemas/User"
+					}
+				}
+			},
+			"VenueListResponse": {
+				"type": "object",
+				"required": ["data"],
+				"properties": {
+					"data": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/VenueSummary"
+						}
+					}
+				},
+				"examples": [
+					{
+						"data": [
+							{
+								"id": 1,
+								"name": "Sede Palermo",
+								"address": "Av. Santa Fe 3500, CABA",
+								"location": "Palermo, a dos cuadras de Plaza Italia"
+							},
+							{
+								"id": 2,
+								"name": "Sede Belgrano",
+								"address": "Av. Cabildo 2100, CABA",
+								"location": "Belgrano, frente a la estación Juramento de la línea D"
+							}
+						]
+					}
+				]
+			},
+			"VenueResponse": {
+				"type": "object",
+				"required": ["data"],
+				"properties": {
+					"data": {
+						"$ref": "#/components/schemas/Venue"
+					}
+				},
+				"examples": [
+					{
+						"data": {
+							"id": 1,
+							"name": "Sede Palermo",
+							"address": "Av. Santa Fe 3500, CABA",
+							"location": "Palermo, a dos cuadras de Plaza Italia",
+							"description": "Sede con sala de yoga y área de entrenamiento funcional, vestuarios y duchas.",
+							"openingHours": [
+								{ "weekday": 1, "opensAt": "07:00", "closesAt": "23:00" },
+								{ "weekday": 2, "opensAt": "07:00", "closesAt": "23:00" },
+								{ "weekday": 3, "opensAt": "07:00", "closesAt": "23:00" },
+								{ "weekday": 4, "opensAt": "07:00", "closesAt": "23:00" },
+								{ "weekday": 5, "opensAt": "07:00", "closesAt": "23:00" },
+								{ "weekday": 6, "opensAt": "09:00", "closesAt": "20:00" }
+							],
+							"activities": [
+								{
+									"id": 1,
+									"name": "Yoga",
+									"description": "Clase de yoga hatha para todos los niveles, con foco en respiración y flexibilidad.",
+									"schedule": [
+										{
+											"weekday": 1,
+											"sessions": [
+												{ "id": 1, "startTime": "08:00", "endTime": "09:00" },
+												{ "id": 2, "startTime": "19:00", "endTime": "20:00" }
+											]
+										},
+										{
+											"weekday": 3,
+											"sessions": [
+												{ "id": 3, "startTime": "08:00", "endTime": "09:00" },
+												{ "id": 4, "startTime": "19:00", "endTime": "20:00" }
+											]
+										},
+										{
+											"weekday": 6,
+											"sessions": [
+												{ "id": 5, "startTime": "10:00", "endTime": "11:00" }
+											]
+										}
+									]
+								},
+								{
+									"id": 2,
+									"name": "Entrenamiento funcional",
+									"description": "Circuito de fuerza y resistencia con peso corporal y elementos.",
+									"schedule": [
+										{
+											"weekday": 2,
+											"sessions": [
+												{ "id": 6, "startTime": "07:30", "endTime": "08:30" },
+												{ "id": 7, "startTime": "18:00", "endTime": "19:00" }
+											]
+										},
+										{
+											"weekday": 4,
+											"sessions": [
+												{ "id": 8, "startTime": "07:30", "endTime": "08:30" },
+												{ "id": 9, "startTime": "18:00", "endTime": "19:00" },
+												{ "id": 10, "startTime": "20:00", "endTime": "21:00" }
+											]
+										}
+									]
+								}
+							]
+						}
+					}
+				]
+			},
+			"ErrorResponse": {
+				"type": "object",
+				"required": ["error"],
+				"properties": {
+					"error": {
+						"type": "object",
+						"required": ["code", "message"],
+						"properties": {
+							"code": {
+								"type": "string",
+								"description": "Stable, machine-readable error code.",
+								"enum": [
+									"INVALID_INPUT",
+									"MALFORMED_JSON",
+									"INVALID_CREDENTIALS",
+									"TOKEN_MISSING",
+									"TOKEN_INVALID",
+									"TOKEN_EXPIRED",
+									"VENUE_NOT_FOUND",
+									"ROUTE_NOT_FOUND",
+									"EMAIL_ALREADY_IN_USE",
+									"PAYLOAD_TOO_LARGE",
+									"UNSUPPORTED_MEDIA_TYPE",
+									"INTERNAL_ERROR"
+								]
+							},
+							"message": {
+								"type": "string",
+								"description": "Human-readable message in English. Clients should rely on `code`."
+							},
+							"details": {
+								"type": "array",
+								"description": "Only present on validation errors (`INVALID_INPUT`). `field` is `null` when the issue concerns the body as a whole (for example, a missing body).",
+								"items": {
+									"type": "object",
+									"required": ["field", "message"],
+									"properties": {
+										"field": {
+											"type": ["string", "null"]
+										},
+										"message": {
+											"type": "string"
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"examples": {
+			"MalformedJson": {
+				"summary": "Body is not valid JSON",
+				"value": {
+					"error": {
+						"code": "MALFORMED_JSON",
+						"message": "Malformed JSON body"
+					}
+				}
+			},
+			"TokenMissing": {
+				"summary": "No Authorization header, or not in the Bearer <token> format",
+				"value": {
+					"error": {
+						"code": "TOKEN_MISSING",
+						"message": "Bearer token is missing"
+					}
+				}
+			},
+			"TokenInvalid": {
+				"summary": "Invalid signature, malformed token, wrong algorithm, or the user no longer exists",
+				"value": {
+					"error": {
+						"code": "TOKEN_INVALID",
+						"message": "Token is invalid"
+					}
+				}
+			},
+			"TokenExpired": {
+				"summary": "Expired token",
+				"value": {
+					"error": {
+						"code": "TOKEN_EXPIRED",
+						"message": "Token has expired"
+					}
+				}
+			}
+		},
+		"responses": {
+			"TokenError": {
+				"description": "`TOKEN_MISSING`: no `Authorization` header or not in the `Bearer <token>` format. `TOKEN_INVALID`: invalid signature, malformed token, wrong algorithm, or a valid token whose user no longer exists. `TOKEN_EXPIRED`: expired token.",
+				"headers": {
+					"WWW-Authenticate": {
+						"$ref": "#/components/headers/WWW-Authenticate"
+					}
+				},
+				"content": {
+					"application/json": {
+						"schema": {
+							"$ref": "#/components/schemas/ErrorResponse"
+						},
+						"examples": {
+							"TOKEN_MISSING": {
+								"$ref": "#/components/examples/TokenMissing"
+							},
+							"TOKEN_INVALID": {
+								"$ref": "#/components/examples/TokenInvalid"
+							},
+							"TOKEN_EXPIRED": {
+								"$ref": "#/components/examples/TokenExpired"
+							}
+						}
+					}
+				}
+			},
+			"PayloadTooLarge": {
+				"description": "`PAYLOAD_TOO_LARGE`: the body exceeds the JSON parser limit (100 KB). Returned before authentication.",
+				"content": {
+					"application/json": {
+						"schema": {
+							"$ref": "#/components/schemas/ErrorResponse"
+						},
+						"examples": {
+							"PAYLOAD_TOO_LARGE": {
+								"summary": "Body too large",
+								"value": {
+									"error": {
+										"code": "PAYLOAD_TOO_LARGE",
+										"message": "Request body too large"
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"UnsupportedMediaType": {
+				"description": "`UNSUPPORTED_MEDIA_TYPE`: the body uses an unsupported charset or content encoding. Returned before authentication.",
+				"content": {
+					"application/json": {
+						"schema": {
+							"$ref": "#/components/schemas/ErrorResponse"
+						},
+						"examples": {
+							"UNSUPPORTED_MEDIA_TYPE": {
+								"summary": "Unsupported charset or encoding",
+								"value": {
+									"error": {
+										"code": "UNSUPPORTED_MEDIA_TYPE",
+										"message": "Unsupported request body charset or encoding"
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"InternalError": {
+				"description": "`INTERNAL_ERROR`: unexpected error. It is logged on the server; no details are exposed.",
+				"content": {
+					"application/json": {
+						"schema": {
+							"$ref": "#/components/schemas/ErrorResponse"
+						},
+						"examples": {
+							"INTERNAL_ERROR": {
+								"summary": "Unexpected error",
+								"value": {
+									"error": {
+										"code": "INTERNAL_ERROR",
+										"message": "Internal server error"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
