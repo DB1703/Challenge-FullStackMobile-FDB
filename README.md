@@ -25,7 +25,9 @@ Ambos proyectos son independientes: cada uno se instala y se ejecuta por separad
 
 ## APK
 
-_Pendiente: enlace a la GitHub Release._
+Descarga: [**Clases.FDB.v1.0.0.apk**](https://github.com/DB1703/Challenge-FullStackMobile-FDB/releases/download/v1.0.0/Clases.FDB.v1.0.0.apk), en la release [v1.0.0](https://github.com/DB1703/Challenge-FullStackMobile-FDB/releases/tag/v1.0.0).
+
+Se instala directamente en el celular y funciona sin conexión, con datos locales: no necesita el backend ni Expo Go. Para instalarlo hay que permitir la instalación de apps de origen desconocido.
 
 Cómo se genera: ver [`mobile-challenge/README.md`](mobile-challenge/README.md#apk).
 

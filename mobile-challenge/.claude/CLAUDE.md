@@ -243,6 +243,7 @@ Tiene que comportarse lo más parecido posible al backend:
 	- El `.env` local está en el `.gitignore`, así que EAS no lo sube y no afecta el build.
 	- `EXPO_PUBLIC_API_URL` y `EXPO_PUBLIC_LOCAL_TOKEN_TTL_SECONDS` se omiten: no se usan en modo local, y el token dura por defecto 3 h.
 - **Versión:** `version` en `app.json` (`1.0.0`). El `versionCode` lo administra EAS (`cli.appVersionSource: remote`).
+- **Publicado:** la release de GitHub [`v1.0.0`](https://github.com/DB1703/Challenge-FullStackMobile-FDB/releases/tag/v1.0.0), con el asset `Clases.FDB.v1.0.0.apk`. Para una versión nueva: subir `version` en `app.json`, generar el build y crear una release nueva (`vX.Y.Z`).
 - **Build:** `npx eas-cli@latest build --platform android --profile preview`. El proyecto ya está vinculado por `extra.eas.projectId`. En el primer build, EAS genera y guarda el keystore.
 - **Nombre visible:** "Clases FDB". El `slug` (`mobile-challenge`) y el paquete (`com.deber.mobilechallenge`) no se cambian: vinculan el proyecto de EAS y la identidad de la app instalada.
 - **Pendiente:** los íconos y la splash screen siguen siendo los del template de Expo (`assets/images/`). Si hay assets propios, reemplazarlos antes del build.

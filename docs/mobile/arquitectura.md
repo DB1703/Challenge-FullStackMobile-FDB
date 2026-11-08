@@ -56,7 +56,7 @@ El layout raíz mantiene la splash screen hasta que se hidratan los stores de se
 | Reservas: fechas de las próximas 4 semanas, duplicados, aviso de superposición y confirmación | ✅ |
 | Inicio: saludo, reservas próximas y pasadas, y cancelación | ✅ |
 | Temas claro y oscuro, skeletons, estados vacíos y de error, y snackbars | ✅ |
-| APK autónomo con datos locales (perfil `preview` de EAS) | ✅ |
+| APK autónomo con datos locales (perfil `preview` de EAS), publicado en la release [v1.0.0](https://github.com/DB1703/Challenge-FullStackMobile-FDB/releases/tag/v1.0.0) | ✅ |
 | Implementación HTTP de los repositorios | ❌ |
 | Bonus del QR | ❌ |
 

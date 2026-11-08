@@ -46,7 +46,9 @@ Desde la carpeta `mobile-challenge/`:
 
 ## APK
 
-El APK de la entrega se genera con EAS Build, con el perfil `preview` de [`eas.json`](eas.json). Ese perfil produce un `.apk` (no `.aab`) con `EXPO_PUBLIC_DATA_SOURCE=local` y el JavaScript incluido: no necesita Metro, backend ni conexión.
+El APK de la entrega está publicado en la release [v1.0.0](https://github.com/DB1703/Challenge-FullStackMobile-FDB/releases/tag/v1.0.0) ([descarga directa](https://github.com/DB1703/Challenge-FullStackMobile-FDB/releases/download/v1.0.0/Clases.FDB.v1.0.0.apk)).
+
+Se genera con EAS Build, con el perfil `preview` de [`eas.json`](eas.json). Ese perfil produce un `.apk` (no `.aab`) con `EXPO_PUBLIC_DATA_SOURCE=local` y el JavaScript incluido: no necesita Metro, backend ni conexión.
 
 ```bash
 npx eas-cli@latest build --platform android --profile preview
