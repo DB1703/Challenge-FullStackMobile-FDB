@@ -210,11 +210,13 @@ Todas las rutas de la API llevan el prefijo `/api/v1`. El health check y la docu
 | 404 | `VENUE_NOT_FOUND` | Sede inexistente, incluido un id no numérico |
 | 404 | `ROUTE_NOT_FOUND` | Ruta inexistente |
 | 409 | `EMAIL_ALREADY_IN_USE` | `PUT /users/me` con un email que usa otro usuario |
+| 413 | `PAYLOAD_TOO_LARGE` | Body que supera el límite de `express.json()` |
+| 415 | `UNSUPPORTED_MEDIA_TYPE` | Body con charset o encoding no soportado |
 | 500 | `INTERNAL_ERROR` | Error inesperado (se loguea completo; al cliente no se le muestran detalles) |
 
 ### Manejo de errores
 
-- Jerarquía de clases en `src/errors/`: `AppError` (base, con `statusCode`, `code` y `message`) y subclases `ValidationError` (400), `UnauthorizedError` (401), `NotFoundError` (404) y `ConflictError` (409).
+- Jerarquía de clases en `src/errors/`: `AppError` (base, con `statusCode`, `code` y `message`) y subclases `ValidationError` (400), `UnauthorizedError` (401), `NotFoundError` (404), `ConflictError` (409), `PayloadTooLargeError` (413) y `UnsupportedMediaTypeError` (415).
 - Manejador central en `src/middlewares/error-handler.js`, registrado al final de `app.js`.
 - Express 5 propaga solo los errores de los handlers async: no hace falta `try/catch` ni wrappers.
 - Las respuestas 401 incluyen el header `WWW-Authenticate` (RFC 6750).

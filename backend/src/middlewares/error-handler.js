@@ -1,6 +1,26 @@
-import { AppError, ValidationError } from '../errors/index.js';
+import {
+	AppError,
+	PayloadTooLargeError,
+	UnsupportedMediaTypeError,
+	ValidationError,
+} from '../errors/index.js';
 
 const INVALID_TOKEN_CODES = new Set(['TOKEN_INVALID', 'TOKEN_EXPIRED']);
+
+// Maps body-parser errors (thrown by express.json()) to errors of the hierarchy.
+function fromBodyParserError(err) {
+	switch (err.type) {
+		case 'entity.parse.failed':
+			return new ValidationError('MALFORMED_JSON', 'Malformed JSON body');
+		case 'entity.too.large':
+			return new PayloadTooLargeError('PAYLOAD_TOO_LARGE', 'Request body too large');
+		case 'charset.unsupported':
+		case 'encoding.unsupported':
+			return new UnsupportedMediaTypeError('UNSUPPORTED_MEDIA_TYPE', 'Unsupported request body charset or encoding');
+		default:
+			return err;
+	}
+}
 
 // RFC 6750: every 401 carries a WWW-Authenticate challenge; token problems add error="invalid_token".
 function buildAuthenticateHeader(code) {
@@ -13,12 +33,7 @@ export function errorHandler(err, req, res, next) {
 		return next(err);
 	}
 
-	let error = err;
-
-	// Thrown by express.json() when the body is not valid JSON.
-	if (err.type === 'entity.parse.failed') {
-		error = new ValidationError('MALFORMED_JSON', 'Malformed JSON body');
-	}
+	const error = fromBodyParserError(err);
 
 	if (error instanceof AppError) {
 		if (error.statusCode === 401) {
