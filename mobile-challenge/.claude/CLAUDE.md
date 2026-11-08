@@ -236,6 +236,16 @@ Tiene que comportarse lo más parecido posible al backend:
 
 - Generado con EAS Build, con un perfil que produce `.apk` (no `.aab`).
 - Tiene que funcionar de forma autónoma: datos locales, sin backend y sin Expo Go.
+- **Perfil `preview`** de `eas.json`: `distribution: internal`, `android.buildType: apk` y `env.EXPO_PUBLIC_DATA_SOURCE=local`. Es un build de distribución (no development build): lleva el bundle de JS incluido y no necesita Metro.
+- **Las variables van en el `env` del perfil, no en las variables de EAS:**
+	- Son públicas (`EXPO_PUBLIC_`), así que pueden commitearse, y quedan versionadas con el código: cualquiera que clone el repo genera el mismo APK sin configurar la cuenta de Expo.
+	- El `.env` local está en el `.gitignore`, así que EAS no lo sube y no afecta el build.
+	- `EXPO_PUBLIC_API_URL` y `EXPO_PUBLIC_LOCAL_TOKEN_TTL_SECONDS` se omiten: no se usan en modo local, y el token dura por defecto 3 h.
+- **Versión:** `version` en `app.json` (`1.0.0`). El `versionCode` lo administra EAS (`cli.appVersionSource: remote`).
+- **Build:** `npx eas-cli@latest build --platform android --profile preview`. El proyecto ya está vinculado por `extra.eas.projectId`. En el primer build, EAS genera y guarda el keystore.
+- **Nombre visible:** "Clases FDB". El `slug` (`mobile-challenge`) y el paquete (`com.deber.mobilechallenge`) no se cambian: vinculan el proyecto de EAS y la identidad de la app instalada.
+- **Pendiente:** los íconos y la splash screen siguen siendo los del template de Expo (`assets/images/`). Si hay assets propios, reemplazarlos antes del build.
+- **La development build y el APK** tienen el mismo paquete y distinta firma: para instalar uno sobre el otro hay que desinstalar el anterior, y eso borra los datos locales.
 
 ## Opcional (al final, si da el tiempo)
 
