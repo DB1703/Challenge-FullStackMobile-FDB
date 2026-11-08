@@ -39,7 +39,9 @@ src/
 ├── features/
 │   ├── auth/
 │   │   ├── components/
-│   │   ├── auth.repository.ts
+│   │   ├── auth.repository.ts        interfaz + selección de la implementación
+│   │   ├── auth.repository.local.ts  implementación local
+│   │   ├── auth.schemas.ts           schemas de zod (reutilizados por los formularios)
 │   │   ├── auth.store.ts
 │   │   └── auth.types.ts
 │   ├── venues/
@@ -47,7 +49,10 @@ src/
 │   └── profile/
 ├── shared/
 │   ├── components/             componentes reutilizables
+│   ├── config/                 env.ts (única lectura de process.env) y selección de implementación
+│   ├── errors/                 AppError y códigos de error
 │   ├── hooks/
+│   ├── schemas/                campos de zod compartidos entre features (emailSchema)
 │   ├── theme/                  temas de Paper (claro y oscuro) y de la navegación
 │   └── utils/
 └── data/                       JSON locales (misma forma que la API, mismos datos que el seed del backend)
@@ -98,17 +103,23 @@ src/app/
 - Hay una implementación **local** (lee `src/data/`) y, más adelante y opcional, una **HTTP** (consume la API).
 - `EXPO_PUBLIC_DATA_SOURCE` decide cuál se usa (`local` por defecto).
 - El resto de la app solo conoce la interfaz.
+- Archivos por feature: `<feature>.repository.ts` (interfaz y `export const <feature>Repository = selectImplementation({ local, api })`) y `<feature>.repository.local.ts`. La HTTP va a ser `<feature>.repository.http.ts`.
+- `shared/config/env.ts` es el único lugar que lee `process.env` (con notación de punto: es la única forma que Expo incrusta en el bundle). Con un valor desconocido, o con `api` mientras no exista la implementación HTTP, **falla al arrancar** en lugar de usar los datos locales sin avisar.
+- **Las operaciones protegidas reciben el token como primer parámetro** (`getProfile(token)`, `updateProfile(token, input)`). Los repositorios no conocen el store de sesión. Un token vacío da `TOKEN_MISSING`.
+- Los ids de las sedes se reciben como `string`, igual que el parámetro de la ruta y la URL de la API.
 
 ### Comportamiento de la implementación local
 
 Tiene que comportarse lo más parecido posible al backend:
 
 - **Forma de los datos:** idéntica a las respuestas de la API (objetos de dominio, sin el envoltorio `{ data }`). Ver la forma de los recursos en `backend/CLAUDE.md`.
-- **Latencia simulada:** una demora fija de alrededor de 500 ms, definida en un solo lugar de `shared/`, para que se vean los estados de carga.
-- **Errores con los mismos códigos que la API** (`INVALID_CREDENTIALS`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `VENUE_NOT_FOUND`, etc.), con una clase de error compartida. La app maneja los errores sin saber si vienen del mock o de la API.
+- **Datos:** `src/data/users.json` (usuario de prueba, con `password`) y `src/data/venues.json` (sedes completas, con la forma de `GET /venues/:id`). El listado se deriva de las sedes completas. Si cambia el seed del backend, hay que actualizar estos JSON.
+- **Latencia simulada:** una demora fija de 500 ms (`shared/utils/simulate-latency.ts`), para que se vean los estados de carga. Se aplica al principio de cada operación, así que los errores también se demoran.
+- **Errores con los mismos códigos que la API** (`INVALID_CREDENTIALS`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `VENUE_NOT_FOUND`, etc.), con una clase de error compartida: `AppError` (`code`, `message`, `details?`) y el type guard `isAppError(error, code?)`, en `shared/errors/app-error.ts`. La app maneja los errores sin saber si vienen del mock o de la API. El `message` queda en inglés, como en la API: la interfaz muestra textos propios según el `code`.
+- **Validación:** las mismas reglas que el backend, con zod. `parseOrThrow(schema, input)` (`shared/utils/validation.ts`) responde `INVALID_INPUT` con `details` en el mismo formato que la API. Los schemas (`auth.schemas.ts`, `profile.schemas.ts` y `emailSchema` en `shared/schemas/`) se reutilizan en los formularios, así que **sus mensajes están en español**.
 - **Login local:** compara contra el usuario de prueba. La contraseña está en texto plano en el JSON local (es un mock con datos de prueba; documentado).
-- **Token local con forma de JWT:** `header.payload.signature` con `sub` (id del usuario) y `exp` (3 horas). La firma es ficticia. Las operaciones protegidas verifican el `exp` y, si venció, responden `TOKEN_EXPIRED`.
-- **Modificaciones del perfil:** se guardan en el dispositivo (almacén de `expo-sqlite`). El login local verifica contra la versión guardada si existe, o contra el JSON si no. Así, un cambio de email funciona igual que en el backend.
+- **Token local con forma de JWT:** `header.payload.signature` con `sub` (id del usuario, como string) y `exp` (3 horas). La firma es ficticia. Se codifica en base64url con `btoa`/`atob`, que Hermes trae nativos (`features/auth/local-token.ts`). Se verifica en el mismo orden que el backend: formato y firma, después `exp` (`TOKEN_EXPIRED`), después `sub`. Todo lo inválido da `TOKEN_INVALID`.
+- **Modificaciones del perfil:** se guardan en el dispositivo, en el almacén de `expo-sqlite` (`features/profile/profile.local-data.ts`, clave `local-data:users:<id>`). El login local verifica contra la versión guardada si existe, o contra el JSON si no. Así, un cambio de email funciona igual que en el backend. La contraseña siempre sale del JSON.
 
 ## Estado global (Zustand)
 

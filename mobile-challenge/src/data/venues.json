@@ -1,0 +1,145 @@
+[
+	{
+		"id": 1,
+		"name": "Sede Palermo",
+		"address": "Av. Santa Fe 3500, CABA",
+		"location": "Palermo, a dos cuadras de Plaza Italia",
+		"description": "Sede con sala de yoga y área de entrenamiento funcional, vestuarios y duchas.",
+		"openingHours": [
+			{ "weekday": 1, "opensAt": "07:00", "closesAt": "23:00" },
+			{ "weekday": 2, "opensAt": "07:00", "closesAt": "23:00" },
+			{ "weekday": 3, "opensAt": "07:00", "closesAt": "23:00" },
+			{ "weekday": 4, "opensAt": "07:00", "closesAt": "23:00" },
+			{ "weekday": 5, "opensAt": "07:00", "closesAt": "23:00" },
+			{ "weekday": 6, "opensAt": "09:00", "closesAt": "20:00" }
+		],
+		"activities": [
+			{
+				"id": 1,
+				"name": "Yoga",
+				"description": "Clase de yoga hatha para todos los niveles, con foco en respiración y flexibilidad.",
+				"schedule": [
+					{
+						"weekday": 1,
+						"sessions": [
+							{ "id": 1, "startTime": "08:00", "endTime": "09:00" },
+							{ "id": 2, "startTime": "19:00", "endTime": "20:00" }
+						]
+					},
+					{
+						"weekday": 3,
+						"sessions": [
+							{ "id": 3, "startTime": "08:00", "endTime": "09:00" },
+							{ "id": 4, "startTime": "19:00", "endTime": "20:00" }
+						]
+					},
+					{
+						"weekday": 6,
+						"sessions": [
+							{ "id": 5, "startTime": "10:00", "endTime": "11:00" }
+						]
+					}
+				]
+			},
+			{
+				"id": 2,
+				"name": "Entrenamiento funcional",
+				"description": "Circuito de fuerza y resistencia con peso corporal y elementos.",
+				"schedule": [
+					{
+						"weekday": 2,
+						"sessions": [
+							{ "id": 6, "startTime": "07:30", "endTime": "08:30" },
+							{ "id": 7, "startTime": "18:00", "endTime": "19:00" }
+						]
+					},
+					{
+						"weekday": 4,
+						"sessions": [
+							{ "id": 8, "startTime": "07:30", "endTime": "08:30" },
+							{ "id": 9, "startTime": "18:00", "endTime": "19:00" },
+							{ "id": 10, "startTime": "20:00", "endTime": "21:00" }
+						]
+					}
+				]
+			}
+		]
+	},
+	{
+		"id": 2,
+		"name": "Sede Belgrano",
+		"address": "Av. Cabildo 2100, CABA",
+		"location": "Belgrano, frente a la estación Juramento de la línea D",
+		"description": "Sede con sala de spinning y estudio de pilates con reformers.",
+		"openingHours": [
+			{ "weekday": 1, "opensAt": "08:00", "closesAt": "22:00" },
+			{ "weekday": 2, "opensAt": "08:00", "closesAt": "22:00" },
+			{ "weekday": 3, "opensAt": "08:00", "closesAt": "22:00" },
+			{ "weekday": 4, "opensAt": "08:00", "closesAt": "22:00" },
+			{ "weekday": 5, "opensAt": "08:00", "closesAt": "22:00" },
+			{ "weekday": 6, "opensAt": "09:00", "closesAt": "14:00" },
+			{ "weekday": 7, "opensAt": "09:00", "closesAt": "13:00" }
+		],
+		"activities": [
+			{
+				"id": 3,
+				"name": "Spinning",
+				"description": "Clase de ciclismo indoor de alta intensidad con música.",
+				"schedule": [
+					{
+						"weekday": 1,
+						"sessions": [
+							{ "id": 11, "startTime": "08:30", "endTime": "09:15" },
+							{ "id": 12, "startTime": "19:00", "endTime": "19:45" }
+						]
+					},
+					{
+						"weekday": 3,
+						"sessions": [
+							{ "id": 13, "startTime": "19:00", "endTime": "19:45" }
+						]
+					},
+					{
+						"weekday": 5,
+						"sessions": [
+							{ "id": 14, "startTime": "08:30", "endTime": "09:15" },
+							{ "id": 15, "startTime": "19:00", "endTime": "19:45" }
+						]
+					},
+					{
+						"weekday": 6,
+						"sessions": [
+							{ "id": 16, "startTime": "10:00", "endTime": "10:45" }
+						]
+					}
+				]
+			},
+			{
+				"id": 4,
+				"name": "Pilates reformer",
+				"description": "Clase de pilates en reformer, grupos reducidos.",
+				"schedule": [
+					{
+						"weekday": 2,
+						"sessions": [
+							{ "id": 17, "startTime": "09:00", "endTime": "10:00" },
+							{ "id": 18, "startTime": "18:30", "endTime": "19:30" }
+						]
+					},
+					{
+						"weekday": 4,
+						"sessions": [
+							{ "id": 19, "startTime": "18:30", "endTime": "19:30" }
+						]
+					},
+					{
+						"weekday": 7,
+						"sessions": [
+							{ "id": 20, "startTime": "10:00", "endTime": "11:00" }
+						]
+					}
+				]
+			}
+		]
+	}
+]

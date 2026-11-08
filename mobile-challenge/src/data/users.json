@@ -1,0 +1,11 @@
+[
+	{
+		"id": 1,
+		"email": "usuario.prueba@example.com",
+		"password": "Prueba123!",
+		"firstName": "Lucía",
+		"lastName": "Fernández",
+		"birthDate": "1995-04-12",
+		"address": "Av. Corrientes 1234, CABA"
+	}
+]
