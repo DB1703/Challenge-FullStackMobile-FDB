@@ -1,30 +1,42 @@
 import { router } from 'expo-router';
-import { Button, Text } from 'react-native-paper';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Button, useTheme } from 'react-native-paper';
 
 import { useAuthStore } from '@/features/auth/auth.store';
-import { ScreenPlaceholder } from '@/shared/components/screen-placeholder';
+import { LogoutButton } from '@/features/profile/components/logout-button';
+import { ProfileDetails } from '@/features/profile/components/profile-details';
 
-// Placeholder until the profile task, which integrates the logout button into the final screen.
 export default function ProfileScreen() {
+	const theme = useTheme();
 	const user = useAuthStore((state) => state.user);
-	const logout = useAuthStore((state) => state.logout);
+
+	// The protected routes only render this screen with a session; `user` is null only while logging out.
+	if (!user) {
+		return null;
+	}
 
 	return (
-		<ScreenPlaceholder title="Perfil">
-			{user && (
-				<>
-					<Text variant="titleMedium">
-						{user.firstName} {user.lastName}
-					</Text>
-					<Text variant="bodyMedium">{user.email}</Text>
-				</>
-			)}
-			<Button mode="contained" onPress={() => router.push('/profile/edit')}>
-				Editar perfil
-			</Button>
-			<Button mode="outlined" onPress={logout}>
-				Cerrar sesión
-			</Button>
-		</ScreenPlaceholder>
+		<ScrollView
+			style={{ backgroundColor: theme.colors.background }}
+			contentContainerStyle={styles.content}
+		>
+			<ProfileDetails user={user} />
+			<View style={styles.actions}>
+				<Button mode="contained-tonal" icon="pencil" onPress={() => router.push('/profile/edit')}>
+					Editar perfil
+				</Button>
+				<LogoutButton />
+			</View>
+		</ScrollView>
 	);
 }
+
+const styles = StyleSheet.create({
+	content: {
+		paddingBottom: 24,
+	},
+	actions: {
+		gap: 12,
+		paddingHorizontal: 16,
+	},
+});

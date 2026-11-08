@@ -167,7 +167,15 @@ Tiene que comportarse lo más parecido posible al backend:
 - **Formularios** con React Hook Form y zod. Las reglas coinciden con las del backend (ver la tabla de validación en `backend/CLAUDE.md`).
 	- `zodResolver` con los schemas de cada feature, `useForm<z.input<…>, unknown, z.output<…>>`, `Controller` con el `TextInput` de Paper (`mode="outlined"`) y `HelperText type="error"` por campo.
 	- Los errores que se refieren al formulario completo (por ejemplo, `INVALID_CREDENTIALS` en el login: "Email o contraseña incorrectos.") van en el formulario, con `setError('root')` y un `HelperText` arriba del botón, y se limpian al editar. Los errores inesperados van en un snackbar.
-	- **Teclado:** `KeyboardAvoidingView behavior="padding"` (la app es edge-to-edge, así que Android tampoco redimensiona la ventana) + `ScrollView` con `keyboardShouldPersistTaps="handled"`. Debajo de un encabezado de navegación, sumar `keyboardVerticalOffset` con la altura del encabezado.
+	- **Teclado:** `KeyboardAvoidingView behavior="padding"` (la app es edge-to-edge, así que Android tampoco redimensiona la ventana) + `ScrollView` con `keyboardShouldPersistTaps="handled"`. Debajo de un encabezado de navegación, sumar `keyboardVerticalOffset={useHeaderHeight()}` (`expo-router/react-navigation`).
+	- **Errores que devuelve el repositorio** (formulario de edición de perfil):
+		- `INVALID_INPUT`: se usa solo el `field` de cada detalle para marcar el campo ("Revisá este campo."), no el texto del detalle.
+		- Los errores de negocio con un campo claro van en ese campo (`EMAIL_ALREADY_IN_USE` → email).
+		- `TOKEN_EXPIRED` y `TOKEN_INVALID` no se tratan en las pantallas: los resuelve `runProtected`.
+		- El resto, en un snackbar.
+	- **Cambios sin guardar:** `usePreventRemove(isDirty && !isSubmitting && isLoggedIn, …)` de `expo-router` muestra el diálogo "¿Descartar los cambios?". `isLoggedIn` en la condición permite que las rutas protegidas saquen la pantalla si la sesión termina. Al guardar con éxito, `reset(values)` + `disablePrevention()` antes de volver.
+	- El botón de guardar queda deshabilitado mientras no haya cambios (`!isDirty`).
+- **Confirmaciones** (cerrar sesión, descartar cambios, cancelar una reserva): `ConfirmDialog` (`shared/components/confirm-dialog.tsx`), un `Dialog` de Paper en un `Portal`, con `destructive` para pintar la acción con el color de error.
 - **Estados de carga:**
 	- **Skeletons** para el contenido que se carga al entrar a una pantalla (listado y detalle de sedes, reservas del Inicio).
 	- **Spinners** para las acciones (botones con `loading`) y la hidratación.
@@ -178,6 +186,8 @@ Tiene que comportarse lo más parecido posible al backend:
 
 - date-fns con el idioma español (`es`).
 - Días de la semana en ISO 8601 (1 = lunes, 7 = domingo), igual que el backend: `getISODay` de date-fns.
+- **Fechas sin hora** (`'YYYY-MM-DD'`, como `birthDate`): siempre con `parseDateOnly` (`shared/utils/dates.ts`), que las interpreta a medianoche **local**. Nunca con `new Date('YYYY-MM-DD')`: lo toma como medianoche UTC, que en Argentina es el día anterior.
+- Formato largo: `formatLongDate` → "12 de abril de 1995". Los formatos nuevos se agregan en `shared/utils/dates.ts`.
 
 ## Variables de entorno
 
