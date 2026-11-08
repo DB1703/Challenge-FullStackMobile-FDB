@@ -14,11 +14,11 @@ Se evaluaron dos alternativas:
 
 ## Decisión
 
-Se adopta un **monorepo simple**: `backend/` y `mobile/` son proyectos independientes, cada uno con su propio `package.json`, sus dependencias y su configuración. La raíz no tiene `package.json`; solo contiene configuración transversal (`.editorconfig`, `.gitattributes`, `.nvmrc`, `.gitignore`), la documentación (`docs/`) y los archivos de contexto para Claude Code.
+Se adopta un **monorepo simple**: `backend/` y `mobile-challenge/` son proyectos independientes, cada uno con su propio `package.json`, sus dependencias y su configuración. La raíz no tiene `package.json`; solo contiene configuración transversal (`.editorconfig`, `.gitattributes`, `.nvmrc`, `.gitignore`), la documentación (`docs/`) y los archivos de contexto para Claude Code.
 
 ## Consecuencias
 
 - Cada proyecto se instala y se ejecuta por separado, sin configuración de workspaces. Esto cumple directamente con el requisito de independencia.
-- El build de la APK con EAS no depende de resolver paquetes compartidos fuera de `mobile/`.
+- El build de la APK con EAS no depende de resolver paquetes compartidos fuera de `mobile-challenge/`.
 - Los tipos de dominio (sedes, clases, usuarios) se definen por duplicado en ambos proyectos. Un cambio en el modelo de datos debe aplicarse en los dos lados de forma manual.
 - Si en el futuro el contrato entre ambos proyectos creciera, migrar a workspaces con un paquete compartido sería un cambio acotado.

@@ -5,7 +5,7 @@
 Challenge técnico de un proceso de selección: aplicación de gestión y reserva de clases deportivas.
 
 - `backend/`: API REST con Node.js + Express.
-- `mobile/`: aplicación con React Native + Expo + TypeScript + Zustand.
+- `mobile-challenge/`: aplicación con React Native + Expo + TypeScript + Zustand.
 
 Ambos proyectos son **independientes**: cada uno tiene su propio `package.json`, se instala y se ejecuta por separado, y no comparten código. No hay `package.json` en la raíz y no debe agregarse.
 
@@ -15,7 +15,7 @@ Cada subproyecto tiene su propio `CLAUDE.md` con sus convenciones específicas.
 
 ```
 backend/            API REST (Express)
-mobile/             App mobile (Expo)
+mobile-challenge/   App mobile (Expo)
 docs/
   general/          Documentación transversal
   backend/          Documentación del backend

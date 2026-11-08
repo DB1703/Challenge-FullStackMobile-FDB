@@ -1,13 +1,13 @@
 # Reserva de clases deportivas — Challenge FullStack Mobile
 
-_Descripción breve: pendiente._
+Aplicación para consultar sedes deportivas, sus clases y horarios, con login y gestión del perfil del usuario. Incluye una API REST (Node.js + Express + SQLite) y una app mobile (React Native + Expo).
 
 ## Estructura del repositorio
 
 | Carpeta | Contenido |
 |---|---|
 | [`backend/`](backend/) | API REST con Node.js + Express |
-| [`mobile/`](mobile/) | Aplicación con React Native + Expo + TypeScript |
+| [`mobile-challenge/`](mobile-challenge/) | Aplicación con React Native + Expo + TypeScript |
 | [`docs/`](docs/) | Documentación técnica y decisiones de arquitectura |
 
 Ambos proyectos son independientes: cada uno se instala y se ejecuta por separado.
@@ -20,7 +20,7 @@ Ambos proyectos son independientes: cada uno se instala y se ejecuta por separad
 ## Instalación y ejecución
 
 - Backend: ver [`backend/README.md`](backend/README.md).
-- Mobile: ver [`mobile/README.md`](mobile/README.md).
+- Mobile: ver [`mobile-challenge/README.md`](mobile-challenge/README.md).
 
 ## APK
 
@@ -28,7 +28,11 @@ _Pendiente: enlace a la GitHub Release._
 
 ## Usuario de prueba
 
-_Pendiente._
+| Email | Contraseña |
+|---|---|
+| `usuario.prueba@example.com` | `Prueba123!` |
+
+En el backend, este usuario lo crea `npm run db:seed`.
 
 ## Documentación
 
