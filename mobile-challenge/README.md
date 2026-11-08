@@ -1,56 +1,66 @@
-# Welcome to your Expo app 👋
+# Mobile — App de reservas
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+App de Android del challenge, hecha con Expo (SDK 58), React Native y TypeScript. Funciona con datos locales, sin backend.
 
-## Get started
+## Requisitos
 
-1. Install dependencies
+- Node.js `26.13.0` (ver `.nvmrc` en la raíz; con nvm: `nvm install && nvm use`).
+- Un celular Android con la **development build** de la app instalada. Expo Go no sirve: la app usa módulos nativos (`expo-sqlite`, `expo-secure-store`, `expo-crypto`). Se genera con EAS:
 
-   ```bash
-   npm install
-   ```
+	```bash
+	npx eas-cli@latest build --profile development --platform android
+	```
 
-2. Start the app
+	O localmente, con el Android SDK instalado: `npx expo run:android`.
+- El celular y la computadora en la misma red, para que la development build se conecte a Metro.
 
-   ```bash
-   npx expo start
-   ```
+## Puesta en marcha
 
-In the output, you'll find options to open the app in a
+Desde la carpeta `mobile-challenge/`:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+1. Instalar las dependencias:
 
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+	```bash
+	npm install
+	```
 
-## Get a fresh project
+2. Crear el `.env` a partir del ejemplo:
 
-When you're ready, run:
+	```bash
+	cp .env.example .env
+	```
+
+	| Variable | Valor por defecto | Uso |
+	|---|---|---|
+	| `EXPO_PUBLIC_DATA_SOURCE` | `local` | Origen de los datos. `api` todavía no está implementado: la app no arranca con ese valor |
+	| `EXPO_PUBLIC_API_URL` | — | URL de la API, solo para el modo `api` |
+	| `EXPO_PUBLIC_LOCAL_TOKEN_TTL_SECONDS` | `10800` (3 h) | Opcional: duración del token local. Un valor corto (por ejemplo, `60`) permite probar la expiración de la sesión |
+
+	Las variables `EXPO_PUBLIC_` se incrustan en el código al compilar: no llevan secretos. Después de cambiarlas, reiniciar Metro.
+
+3. Levantar Metro y abrir la app en el celular:
+
+	```bash
+	npx expo start --dev-client
+	```
+
+## APK
+
+El APK de la entrega se genera con EAS Build, con el perfil `preview` de [`eas.json`](eas.json). Ese perfil produce un `.apk` (no `.aab`) con `EXPO_PUBLIC_DATA_SOURCE=local` y el JavaScript incluido: no necesita Metro, backend ni conexión.
 
 ```bash
-npm run reset-project
+npx eas-cli@latest build --platform android --profile preview
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+Al terminar, EAS da el enlace para descargarlo.
 
-### Other setup steps
+## Documentación
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+- Arquitectura, estado de implementación y limitaciones: [`docs/mobile/arquitectura.md`](../docs/mobile/arquitectura.md).
+- Decisiones: [`docs/mobile/decisiones/`](../docs/mobile/decisiones/).
 
-## Learn more
+## Usuario de prueba
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+| Email | Contraseña |
+|---|---|
+| `usuario.prueba@example.com` | `Prueba123!` |

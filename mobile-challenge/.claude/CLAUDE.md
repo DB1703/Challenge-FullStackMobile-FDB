@@ -59,6 +59,7 @@ src/
 ```
 
 - Las pantallas de `app/` combinan componentes, hooks y stores; la lógica vive en `features/` y `shared/`.
+- Los hooks de una feature van en `features/<feature>/hooks/` (por ejemplo, `use-venue.ts` y `use-resolved-bookings.ts`). Los genéricos van en `shared/hooks/` (`use-async.ts` y `use-now.ts`).
 - No todas las features tienen todos los archivos: si no hay estado global, no hay `.store.ts`.
 
 ## Convenciones
@@ -198,7 +199,7 @@ Tiene que comportarse lo más parecido posible al backend:
 - **Confirmaciones** (cerrar sesión, descartar cambios, cancelar una reserva): `ConfirmDialog` (`shared/components/confirm-dialog.tsx`), un `Dialog` de Paper en un `Portal`, con `destructive` para pintar la acción con el color de error.
 - **Estados de carga:**
 	- **Skeletons** para el contenido que se carga al entrar a una pantalla (listado y detalle de sedes, reservas del Inicio).
-	- **Spinners** para las acciones (botones con `loading`) y la hidratación.
+	- **Spinners** para las acciones (botones con `loading`). La hidratación mantiene la splash screen, sin spinner.
 - **Estados vacíos** con un mensaje y, cuando corresponda, un acceso a la acción siguiente (por ejemplo, Inicio sin reservas → ir a Sedes).
 - **Componentes de estado** (`shared/components/`):
 	- `Skeleton`: un bloque con pulso de opacidad (Reanimated).

@@ -15,16 +15,19 @@ Ambos proyectos son independientes: cada uno se instala y se ejecuta por separad
 ## Requisitos
 
 - Node.js `26.13.0` (definida en `.nvmrc`; con nvm: `nvm install && nvm use`).
-- _Resto de requisitos: pendiente._
+- Backend: no necesita nada más.
+- Mobile: para desarrollar, un celular Android con la development build de la app instalada (no Expo Go). Para probarla, alcanza con el APK.
 
 ## Instalación y ejecución
 
 - Backend: ver [`backend/README.md`](backend/README.md).
-- Mobile: ver [`mobile-challenge/README.md`](mobile-challenge/README.md).
+- Mobile: ver [`mobile-challenge/README.md`](mobile-challenge/README.md). Funciona con datos locales, sin el backend.
 
 ## APK
 
 _Pendiente: enlace a la GitHub Release._
+
+Cómo se genera: ver [`mobile-challenge/README.md`](mobile-challenge/README.md#apk).
 
 ## Usuario de prueba
 
@@ -32,7 +35,7 @@ _Pendiente: enlace a la GitHub Release._
 |---|---|
 | `usuario.prueba@example.com` | `Prueba123!` |
 
-En el backend, este usuario lo crea `npm run db:seed`.
+En el backend, este usuario lo crea `npm run db:seed`. En la app, está en `mobile-challenge/src/data/users.json`.
 
 ## Documentación
 
