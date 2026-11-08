@@ -1,22 +1,13 @@
+import { env } from '@/shared/config/env';
 import { AppError } from '@/shared/errors/app-error';
+import { decodeBase64Url, encodeBase64Url } from '@/shared/utils/base64url';
 
 // JWT-shaped token for the local repositories: `header.payload.signature`, base64url encoded.
 // The signature is a fixed fake value (there is no secret on the device).
-// Hermes provides btoa/atob natively. Header and payload are ASCII, so no UTF-8 encoding is needed.
+// Header and payload are ASCII, so no UTF-8 encoding is needed.
 
-const TOKEN_LIFETIME_SECONDS = 3 * 60 * 60;
-
-function toBase64Url(value: string): string {
-	return btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-function fromBase64Url(value: string): string {
-	const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
-	return atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='));
-}
-
-const HEADER = toBase64Url(JSON.stringify({ alg: 'HS256' }));
-const SIGNATURE = toBase64Url('local-mock-signature');
+const HEADER = encodeBase64Url(JSON.stringify({ alg: 'HS256' }));
+const SIGNATURE = encodeBase64Url('local-mock-signature');
 
 function invalidToken(): AppError {
 	return new AppError('TOKEN_INVALID', 'Token is invalid');
@@ -24,8 +15,8 @@ function invalidToken(): AppError {
 
 /** Same payload as the API: only `sub` (user id as a string) and `exp` (in seconds). */
 export function createLocalToken(userId: number): string {
-	const exp = Math.floor(Date.now() / 1000) + TOKEN_LIFETIME_SECONDS;
-	const payload = toBase64Url(JSON.stringify({ sub: String(userId), exp }));
+	const exp = Math.floor(Date.now() / 1000) + env.localTokenTtlSeconds;
+	const payload = encodeBase64Url(JSON.stringify({ sub: String(userId), exp }));
 	return `${HEADER}.${payload}.${SIGNATURE}`;
 }
 
@@ -45,7 +36,7 @@ export function verifyLocalToken(token: string): number {
 
 	let payload: unknown;
 	try {
-		payload = JSON.parse(fromBase64Url(parts[1]));
+		payload = JSON.parse(decodeBase64Url(parts[1]));
 	} catch {
 		throw invalidToken();
 	}

@@ -131,9 +131,23 @@ Tiene que comportarse lo más parecido posible al backend:
 - **Sedes:** sin store. Hooks por pantalla (`useVenues()`, `useVenue(id)`) con su propio estado de carga y error.
 - **Hidratación:** la navegación no decide entre login y app hasta que los stores terminan de hidratarse. Mientras tanto se mantiene la splash screen (`expo-splash-screen`).
 
+### Sesión (`features/auth/auth.store.ts`)
+
+- **Claves:** el usuario se guarda con `persist` (`name: 'auth-session'`, `partialize` solo con `user`) y el token en SecureStore con la clave `auth.token`.
+- **`login`:** `authRepository.login` → `profileRepository.getProfile` → guarda el token → setea la sesión. Si falla un paso, no queda una sesión a medias; el error se propaga a la pantalla.
+- **`logout`:** borra el token y limpia el estado, aunque falle el borrado. Las reservas no se tocan.
+- **Hidratación** (`onRehydrateStorage` → `completeHydration`), antes de ocultar la splash:
+	1. Lee el token. Si falta el token o el usuario, se descarta lo que haya.
+	2. Si el `exp` del token guardado ya pasó, se descarta la sesión y se muestra el aviso de expiración, sin pasar por Inicio. El `exp` se lee con `readTokenExpiration` (`shared/utils/jwt.ts`), que **no verifica la firma**: solo sirve para decisiones de interfaz.
+	3. Si queda una sesión, se **revalida en segundo plano** con `getProfile`: refresca el usuario y detecta `TOKEN_INVALID`. Los demás errores (por ejemplo, sin red) se ignoran y la sesión sigue.
+- **Rutas protegidas** en `app/_layout.tsx`: `Stack.Protected guard={isLoggedIn}` para `(app)` y `guard={!isLoggedIn}` para `login`. Después del login o del logout no se navega a mano: el guard redirige. `useIsLoggedIn()` exige token y usuario.
+
 ### Manejo de errores de sesión
 
 `TOKEN_EXPIRED` y `TOKEN_INVALID` se manejan en un solo lugar: se cierra la sesión, se vuelve al login y se muestra un mensaje ("Tu sesión expiró. Volvé a ingresar."). Funciona igual con la implementación local y con la HTTP.
+
+- **Toda operación protegida pasa por el store**, a través de `runProtected(operation)`. Si captura un error de sesión, llama a `expireSession()` (`logout` + `sessionExpired: true`) y relanza el error, para que el que llamó corte su flujo. Ignora los errores de un token que ya no es el actual. Las features con operaciones protegidas nuevas agregan acciones al store que usen `runProtected`; no llaman al repositorio con el token directamente.
+- **El store no conoce los snackbars:** publica `sessionExpired`. `SessionExpiredNotifier` (`features/auth/components/`), montado una vez en el layout raíz, muestra el snackbar y limpia el aviso. La vuelta al login la hacen las rutas protegidas.
 
 ## Reservas
 
@@ -151,6 +165,9 @@ Tiene que comportarse lo más parecido posible al backend:
 - **React Native Paper** con tema Material Design 3, variantes clara y oscura, y el tema de la navegación adaptado al de Paper (`shared/theme/`, hook `useAppTheme()`). El tema de navegación usa el mismo mapeo de colores que `adaptNavigationTheme` de Paper, pero escrito a mano: los tipos de Paper esperan colores `string` y el `Theme` de Expo Router usa `ColorValue`.
 - **Snackbars** para comunicar éxito y errores: `useSnackbar()` → `showSuccess(message)` / `showError(message)` (`shared/components/snackbar-provider.tsx`). Se muestra un mensaje por vez; uno nuevo reemplaza al anterior.
 - **Formularios** con React Hook Form y zod. Las reglas coinciden con las del backend (ver la tabla de validación en `backend/CLAUDE.md`).
+	- `zodResolver` con los schemas de cada feature, `useForm<z.input<…>, unknown, z.output<…>>`, `Controller` con el `TextInput` de Paper (`mode="outlined"`) y `HelperText type="error"` por campo.
+	- Los errores que se refieren al formulario completo (por ejemplo, `INVALID_CREDENTIALS` en el login: "Email o contraseña incorrectos.") van en el formulario, con `setError('root')` y un `HelperText` arriba del botón, y se limpian al editar. Los errores inesperados van en un snackbar.
+	- **Teclado:** `KeyboardAvoidingView behavior="padding"` (la app es edge-to-edge, así que Android tampoco redimensiona la ventana) + `ScrollView` con `keyboardShouldPersistTaps="handled"`. Debajo de un encabezado de navegación, sumar `keyboardVerticalOffset` con la altura del encabezado.
 - **Estados de carga:**
 	- **Skeletons** para el contenido que se carga al entrar a una pantalla (listado y detalle de sedes, reservas del Inicio).
 	- **Spinners** para las acciones (botones con `loading`) y la hidratación.
@@ -168,6 +185,7 @@ Tiene que comportarse lo más parecido posible al backend:
 |---|---|---|
 | `EXPO_PUBLIC_DATA_SOURCE` | `local` (por defecto) o `api` | Implementación de repositorios |
 | `EXPO_PUBLIC_API_URL` | ej.: `http://192.168.0.10:3000/api/v1` (IP local de la computadora) | URL de la API (solo en modo `api`) |
+| `EXPO_PUBLIC_LOCAL_TOKEN_TTL_SECONDS` | entero positivo, por defecto `10800` (3 h) | Opcional, solo desarrollo: duración del token local, para probar la expiración (ej.: `60`) |
 
 - Las variables `EXPO_PUBLIC_` se incrustan en el código al compilar: **nunca llevan secretos**.
 - Para el APK se definen en el perfil de `eas.json`.
