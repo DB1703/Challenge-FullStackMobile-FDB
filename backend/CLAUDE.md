@@ -232,7 +232,7 @@ Todas las rutas de la API llevan el prefijo `/api/v1`. El health check y la docu
 
 ## Validación
 
-- Con zod 4. Schemas en `src/schemas/`, un archivo por recurso.
+- Con zod 4. Schemas en `src/schemas/`, un archivo por recurso. Excepción: `common.schemas.js` reúne los campos compartidos entre recursos (por ejemplo, `emailSchema`, que usan el login y el perfil), para que sus reglas se definan en un solo lugar.
 - Middleware genérico `validate(schema)` en las rutas. Reemplaza `req.body` por los datos validados y normalizados.
 - Los campos no permitidos se rechazan (`.strict()`), con 400 `INVALID_INPUT`.
 - **`PUT /users/me` es un reemplazo total:** el body trae siempre `firstName`, `lastName`, `email` y `address` (string o `null`). `birthDate` y la contraseña no son editables.
@@ -241,7 +241,7 @@ Todas las rutas de la API llevan el prefijo `/api/v1`. El health check y la docu
 |---|---|
 | `firstName`, `lastName` | String con `trim`, entre 1 y 50 caracteres |
 | `email` | Email válido, normalizado (`trim` y minúsculas) |
-| `address` | String de hasta 200 caracteres, o `null`; vacío se convierte en `null` |
+| `address` | String con `trim`, de hasta 200 caracteres (medidos después del `trim`), o `null`; vacío o solo espacios se convierte en `null` |
 
 - La verificación de email duplicado busca **otro** usuario con ese email, excluyendo al usuario actual.
 

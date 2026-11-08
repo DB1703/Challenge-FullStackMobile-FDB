@@ -1,7 +1,7 @@
 import { z } from 'zod';
+import { emailSchema } from './common.schemas.js';
 
 export const loginSchema = z.object({
-	// Normalized before validating, so surrounding spaces or uppercase letters are accepted.
-	email: z.string().trim().toLowerCase().pipe(z.email()),
+	email: emailSchema,
 	password: z.string().min(1, 'Password is required'),
 }).strict();
