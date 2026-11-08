@@ -2,6 +2,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Divider, Text, useTheme } from 'react-native-paper';
 
+import { useBookedSessionIds } from '@/features/bookings/hooks/use-booked-session-ids';
 import { ActivitySchedule } from '@/features/venues/components/activity-schedule';
 import { OpeningHours } from '@/features/venues/components/opening-hours';
 import { VenueDetailSkeleton } from '@/features/venues/components/venue-detail-skeleton';
@@ -15,6 +16,7 @@ export default function VenueDetailScreen() {
 	const theme = useTheme();
 	const { id } = useLocalSearchParams<{ id: string }>();
 	const venue = useVenue(id);
+	const bookedSessionIds = useBookedSessionIds(venue.status === 'success' ? venue.data : null);
 
 	const backToList = () => (router.canGoBack() ? router.back() : router.replace('/venues'));
 
@@ -47,6 +49,7 @@ export default function VenueDetailScreen() {
 						<ActivitySchedule
 							key={activity.id}
 							activity={activity}
+							bookedSessionIds={bookedSessionIds}
 							onSessionPress={(session) =>
 								router.push({
 									pathname: '/booking',

@@ -28,6 +28,16 @@ export function formatWeekday(isoWeekday: number): string {
 	return capitalize(es.localize.day((isoWeekday % 7) as 0 | 1 | 2 | 3 | 4 | 5 | 6, { width: 'wide' }));
 }
 
+/** e.g. "lunes 17 de noviembre" */
+export function formatDayMonth(date: Date): string {
+	return format(date, "EEEE d 'de' MMMM", { locale: es });
+}
+
+/** e.g. "Lunes 17 de noviembre de 2026" */
+export function formatFullDate(date: Date): string {
+	return capitalize(format(date, "EEEE d 'de' MMMM 'de' yyyy", { locale: es }));
+}
+
 /** `HH:MM` times → "08:00 – 09:00" */
 export function formatTimeRange(start: string, end: string): string {
 	return `${start} – ${end}`;

@@ -6,10 +6,11 @@ import { PaperProvider } from 'react-native-paper';
 
 import { useAuthStore, useIsLoggedIn } from '@/features/auth/auth.store';
 import { SessionExpiredNotifier } from '@/features/auth/components/session-expired-notifier';
+import { useBookingsStore } from '@/features/bookings/bookings.store';
 import { SnackbarProvider } from '@/shared/components/snackbar-provider';
 import { useAppTheme } from '@/shared/theme/use-app-theme';
 
-// Kept visible until the session store is hydrated.
+// Kept visible until the session and bookings stores are hydrated.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -29,7 +30,9 @@ export default function RootLayout() {
 }
 
 function RootNavigator() {
-	const isHydrated = useAuthStore((state) => state.isHydrated);
+	const isAuthHydrated = useAuthStore((state) => state.isHydrated);
+	const isBookingsHydrated = useBookingsStore((state) => state.isHydrated);
+	const isHydrated = isAuthHydrated && isBookingsHydrated;
 	const isLoggedIn = useIsLoggedIn();
 
 	useEffect(() => {
@@ -38,7 +41,7 @@ function RootNavigator() {
 		}
 	}, [isHydrated]);
 
-	// Navigation doesn't decide between the login and the app until the saved session is loaded.
+	// Navigation doesn't decide between the login and the app until the saved data is loaded.
 	if (!isHydrated) {
 		return null;
 	}

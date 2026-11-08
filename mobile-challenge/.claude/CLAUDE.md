@@ -127,11 +127,12 @@ Tiene que comportarse lo más parecido posible al backend:
 	- El **usuario** se persiste con `persist` en el almacén de `expo-sqlite`.
 	- El **token** se guarda en `expo-secure-store`, explícitamente en `login` y `logout`.
 	- La sesión está activa solo si existen el token y el usuario.
-- **Reservas (`bookings.store.ts`):** persistidas con `persist` en el almacén de `expo-sqlite`.
+- **Reservas (`bookings.store.ts`):** persistidas con `persist` en el almacén de `expo-sqlite` (`name: 'bookings'`), con las reservas de todos los usuarios. `useUserBookings()` filtra por el usuario de la sesión.
+	- **Son siempre locales, también en modo `api`:** el backend no tiene reservas. No hay repositorio de reservas: el store es la fuente.
 - **Sedes:** sin store. Hooks por pantalla (`useVenues()`, `useVenue(id)`) con su propio estado de carga y error.
 	- Se basan en `useAsync(load, deps)` (`shared/hooks/use-async.ts`), que devuelve `status` (`loading` | `error` | `success`), `data`, `error` y `retry`, y descarta los resultados viejos.
 	- `useVenue` usa `getVenueCached(id)` (`features/venues/venue-cache.ts`): una caché en memoria del detalle de cada sede. Guarda la promesa, así que deduplica las cargas simultáneas, y no guarda los errores, así que el reintento vuelve a pedir. La comparten el detalle, el modal de reserva y el Inicio, así que cada sede se carga una vez por ejecución (el catálogo es estático).
-- **Hidratación:** la navegación no decide entre login y app hasta que los stores terminan de hidratarse. Mientras tanto se mantiene la splash screen (`expo-splash-screen`).
+- **Hidratación:** la navegación no decide entre login y app hasta que los stores terminan de hidratarse. Mientras tanto se mantiene la splash screen (`expo-splash-screen`). `RootNavigator` espera a `isHydrated` de los dos stores (sesión y reservas).
 
 ### Sesión (`features/auth/auth.store.ts`)
 
@@ -155,11 +156,28 @@ Tiene que comportarse lo más parecido posible al backend:
 
 - **Se reserva una fecha concreta** de una sesión, elegida entre las ocurrencias de las **próximas 4 semanas** (ventana móvil desde hoy).
 - Una sesión de hoy que ya empezó **no se puede reservar**.
-- **Se guardan solo referencias:** id de la reserva (UUID con `expo-crypto`), `userId`, `sessionId` y la fecha. Los datos para mostrar (sede, actividad, horario) se obtienen del catálogo.
+- **Se guardan solo referencias:** id de la reserva (UUID con `expo-crypto`), `userId`, `venueId`, `sessionId` y la fecha (`'YYYY-MM-DD'`). Los datos para mostrar (sede, actividad, horario) se obtienen del catálogo.
+	- `venueId` permite cargar solo las sedes que tienen reservas. `useResolvedBookings(now)` toma los `venueId` únicos, los carga en paralelo con `getVenueCached` y arma un índice `sessionId → { venue, activity, session }` (`indexVenueSessions`, en `booking-details.ts`).
+	- Una sesión que ya no está en el catálogo se muestra como "Sesión no disponible" y cuenta como próxima hasta el final de su día.
+- **Reglas** (funciones puras en `features/bookings/booking-rules.ts`):
+	- Ventana de **28 días** desde hoy, inclusive. `getAvailableDates(weekday, startTime, now)` toma `startOfDay(now)`, calcula el primer día con ese `weekday` ISO (`(weekday - getISODay(hoy) + 7) % 7`) y suma de a 7 días: siempre son 4 fechas, menos la de hoy si ya empezó.
+	- Fecha y hora de una sesión: `parse('YYYY-MM-DD HH:mm')` en hora **local** (`getSessionDateTime`).
+	- **Próxima = la sesión todavía no empezó.** Desde que empieza es pasada y ya no se puede cancelar.
+	- Superposición: misma fecha y horarios que se cruzan. Dos sesiones seguidas (una termina cuando empieza la otra) no se superponen.
+- **Errores:** `BookingError` (`bookings.errors.ts`), separado de `AppError` porque son reglas locales, no códigos de la API: `SESSION_ALREADY_STARTED`, `DATE_NOT_AVAILABLE`, `BOOKING_DUPLICATE`, `BOOKING_NOT_FOUND`, `BOOKING_NOT_CANCELLABLE`, `NOT_AUTHENTICATED`. La interfaz ya evita estos casos; el store los valida igual, como red de seguridad.
+- **El tiempo avanza en pantalla:** `useNow()` (`shared/hooks/use-now.ts`) se actualiza cada minuto, así una reserva pasa de próxima a pasada sin recargar.
 - **Duplicados:** se impide reservar la misma sesión en la misma fecha. El detalle de la sede muestra qué sesiones ya están reservadas.
 - **Superposición de horario** con otra reserva: se **advierte**, pero se permite.
 - **Cancelación:** solo de reservas **próximas**, con confirmación. Las reservas pasadas no se pueden cancelar.
 - **Inicio:** reservas próximas y, en una sección aparte, las pasadas.
+	- Las próximas se ordenan de forma ascendente por inicio y las pasadas de forma descendente (la más reciente primero).
+	- La cancelación usa `ConfirmDialog` y muestra un snackbar.
+- **Modal de reserva:**
+	- Muestra las 4 fechas con `RadioButton.Item`. Las que el usuario ya reservó aparecen deshabilitadas, con el texto "Ya reservada".
+	- La superposición se muestra como aviso, en `tertiaryContainer`, y no bloquea la reserva.
+	- Al confirmar pasa al estado de éxito: con "Listo", o se cierra solo a los 2,5 s.
+	- La creación de una reserva tiene la latencia simulada, para que se vea la carga. La cancelación no, para que el snackbar aparezca enseguida.
+- **Detalle de sede:** las sesiones con una reserva próxima del usuario se marcan (chip seleccionado, ícono `check`, "Reservada") y se siguen pudiendo reservar en otra fecha (`useBookedSessionIds`).
 - Las reservas están **asociadas al usuario** (`userId`) y se conservan al cerrar sesión.
 
 ## Interfaz
@@ -200,6 +218,7 @@ Tiene que comportarse lo más parecido posible al backend:
 - **Fechas sin hora** (`'YYYY-MM-DD'`, como `birthDate`): siempre con `parseDateOnly` (`shared/utils/dates.ts`), que las interpreta a medianoche **local**. Nunca con `new Date('YYYY-MM-DD')`: lo toma como medianoche UTC, que en Argentina es el día anterior.
 - Formato largo: `formatLongDate` → "12 de abril de 1995". Los formatos nuevos se agregan en `shared/utils/dates.ts`.
 - `formatWeekday(isoWeekday)` → "Lunes" … "Domingo" (convierte ISO a la numeración de date-fns, donde domingo es 0) y `formatTimeRange(start, end)` → "08:00 – 09:00".
+- `formatDayMonth` → "lunes 16 de noviembre" (fechas del modal) y `formatFullDate` → "Lunes 16 de noviembre de 2026" (tarjetas de reserva).
 
 ## Variables de entorno
 
