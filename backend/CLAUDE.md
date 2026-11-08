@@ -77,8 +77,8 @@ Variables de entorno, leídas y validadas en `src/config/env.js` con *fail fast*
 | Variable | Obligatoria | Valor por defecto |
 |---|---|---|
 | `PORT` | No | `3000` |
-| `JWT_SECRET` | Sí | — |
-| `JWT_EXPIRES_IN` | No | `3h` |
+| `JWT_SECRET` | Sí | — (mínimo 32 caracteres) |
+| `JWT_EXPIRES_IN` | No | `3h` (número positivo + unidad: `s`, `m`, `h`, `d`, `w`, `y` o sus variantes largas; ej. `90m`, `7 days`) |
 
 ## Persistencia
 
@@ -205,7 +205,7 @@ Todas las rutas de la API llevan el prefijo `/api/v1`. El health check y la docu
 | 400 | `MALFORMED_JSON` | Body que no es JSON válido |
 | 401 | `INVALID_CREDENTIALS` | Login fallido (mismo error para email inexistente y contraseña incorrecta) |
 | 401 | `TOKEN_MISSING` | Sin header `Authorization` o sin el formato `Bearer <token>` |
-| 401 | `TOKEN_INVALID` | Firma inválida, token malformado o algoritmo incorrecto |
+| 401 | `TOKEN_INVALID` | Firma inválida, token malformado o algoritmo incorrecto; también un token válido cuyo usuario ya no existe (lo detecta el servicio, no `authenticate`) |
 | 401 | `TOKEN_EXPIRED` | Token vencido |
 | 404 | `VENUE_NOT_FOUND` | Sede inexistente, incluido un id no numérico |
 | 404 | `ROUTE_NOT_FOUND` | Ruta inexistente |
