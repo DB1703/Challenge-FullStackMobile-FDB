@@ -31,7 +31,25 @@ docs/
 
 ### Glosario de dominio
 
-_Pendiente de definir._ Cuando se defina, usar siempre la misma traducción de cada término en todo el código.
+Usar siempre la misma traducción de cada término en todo el código (tipos, variables, rutas de la API, stores, pantallas).
+
+| Español | Inglés |
+|---|---|
+| usuario | `user` |
+| perfil | `profile` |
+| credenciales | `credentials` |
+| descripción | `description` |
+| dirección | `address` |
+| sede | `venue` |
+| clase deportiva | `activity` |
+| instancia reservable de una actividad (ej.: yoga, lunes 18:00) | `session` |
+| horarios de funcionamiento de una sede | `openingHours` |
+| horarios de una actividad | `schedule` |
+| ubicación | `location` |
+| día de la semana | `weekday` |
+| reserva | `booking` |
+
+No usar `class` para referirse a una clase deportiva: es palabra reservada de JavaScript. El término correcto es `activity`.
 
 ## Formato de código
 
