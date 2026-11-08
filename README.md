@@ -14,7 +14,7 @@ Ambos proyectos son independientes: cada uno se instala y se ejecuta por separad
 
 ## Requisitos
 
-- Node.js `24.12.0` (definida en `.nvmrc`; con nvm: `nvm install && nvm use`).
+- Node.js `26.13.0` (definida en `.nvmrc`; con nvm: `nvm install && nvm use`).
 - _Resto de requisitos: pendiente._
 
 ## Instalación y ejecución

@@ -56,7 +56,7 @@ No usar `class` para referirse a una clase deportiva: es palabra reservada de Ja
 - Indentación con tabs (ancho visual 2). Excepción: archivos YAML, con 2 espacios.
 - Finales de línea LF, codificación UTF-8, salto de línea al final de cada archivo.
 - Ver `.editorconfig`.
-- Versión de Node: `24.12.0` (ver `.nvmrc`).
+- Versión de Node: `26.13.0` (ver `.nvmrc`).
 
 ## Git
 
