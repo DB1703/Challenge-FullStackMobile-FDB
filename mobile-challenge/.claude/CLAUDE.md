@@ -129,6 +129,8 @@ Tiene que comportarse lo más parecido posible al backend:
 	- La sesión está activa solo si existen el token y el usuario.
 - **Reservas (`bookings.store.ts`):** persistidas con `persist` en el almacén de `expo-sqlite`.
 - **Sedes:** sin store. Hooks por pantalla (`useVenues()`, `useVenue(id)`) con su propio estado de carga y error.
+	- Se basan en `useAsync(load, deps)` (`shared/hooks/use-async.ts`), que devuelve `status` (`loading` | `error` | `success`), `data`, `error` y `retry`, y descarta los resultados viejos.
+	- `useVenue` usa `getVenueCached(id)` (`features/venues/venue-cache.ts`): una caché en memoria del detalle de cada sede. Guarda la promesa, así que deduplica las cargas simultáneas, y no guarda los errores, así que el reintento vuelve a pedir. La comparten el detalle, el modal de reserva y el Inicio, así que cada sede se carga una vez por ejecución (el catálogo es estático).
 - **Hidratación:** la navegación no decide entre login y app hasta que los stores terminan de hidratarse. Mientras tanto se mantiene la splash screen (`expo-splash-screen`).
 
 ### Sesión (`features/auth/auth.store.ts`)
@@ -180,6 +182,15 @@ Tiene que comportarse lo más parecido posible al backend:
 	- **Skeletons** para el contenido que se carga al entrar a una pantalla (listado y detalle de sedes, reservas del Inicio).
 	- **Spinners** para las acciones (botones con `loading`) y la hidratación.
 - **Estados vacíos** con un mensaje y, cuando corresponda, un acceso a la acción siguiente (por ejemplo, Inicio sin reservas → ir a Sedes).
+- **Componentes de estado** (`shared/components/`):
+	- `Skeleton`: un bloque con pulso de opacidad (Reanimated).
+	- `EmptyState`: ícono, título, mensaje y acción opcional.
+	- `ErrorState`: un error de carga con "Reintentar".
+	- Cada pantalla arma su skeleton con la forma de su contenido (`venue-list-skeleton`, `venue-detail-skeleton`).
+- **Detalle de sede:**
+	- Los horarios muestran siempre los 7 días, de lunes a domingo. Los días sin horario (no vienen en los datos) se ven como **"Cerrado"** y el día de hoy, resaltado.
+	- `VENUE_NOT_FOUND` tiene su propio estado ("No encontramos esta sede") con la acción "Ver sedes". Los demás errores usan `ErrorState`.
+	- Cada sesión es un `Chip` que abre el modal de reserva con los params `venueId` y `sessionId`.
 - La confirmación de reserva que pide el enunciado se muestra en el modal, que pasa a un estado de éxito antes de cerrarse.
 
 ## Fechas
@@ -188,6 +199,7 @@ Tiene que comportarse lo más parecido posible al backend:
 - Días de la semana en ISO 8601 (1 = lunes, 7 = domingo), igual que el backend: `getISODay` de date-fns.
 - **Fechas sin hora** (`'YYYY-MM-DD'`, como `birthDate`): siempre con `parseDateOnly` (`shared/utils/dates.ts`), que las interpreta a medianoche **local**. Nunca con `new Date('YYYY-MM-DD')`: lo toma como medianoche UTC, que en Argentina es el día anterior.
 - Formato largo: `formatLongDate` → "12 de abril de 1995". Los formatos nuevos se agregan en `shared/utils/dates.ts`.
+- `formatWeekday(isoWeekday)` → "Lunes" … "Domingo" (convierte ISO a la numeración de date-fns, donde domingo es 0) y `formatTimeRange(start, end)` → "08:00 – 09:00".
 
 ## Variables de entorno
 

@@ -17,3 +17,18 @@ export function parseDateOnly(value: string): Date {
 export function formatLongDate(date: Date): string {
 	return format(date, "d 'de' MMMM 'de' yyyy", { locale: es });
 }
+
+function capitalize(value: string): string {
+	return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+/** ISO 8601 weekday (1 = Monday … 7 = Sunday) → "Lunes" … "Domingo". */
+export function formatWeekday(isoWeekday: number): string {
+	// date-fns' locale counts days from Sunday = 0.
+	return capitalize(es.localize.day((isoWeekday % 7) as 0 | 1 | 2 | 3 | 4 | 5 | 6, { width: 'wide' }));
+}
+
+/** `HH:MM` times → "08:00 – 09:00" */
+export function formatTimeRange(start: string, end: string): string {
+	return `${start} – ${end}`;
+}
